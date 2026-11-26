@@ -12,6 +12,7 @@ import {
   Sparkles,
   FileEdit,
   BarChart3,
+  Timer,
 } from 'lucide-react';
 import {
   BarChart,
@@ -40,6 +41,7 @@ interface DashboardPageProps {
   onNavigate: (tab: string) => void;
   onOpenModule: (disc: DisciplineId) => void;
   onLaunchExam: (source: string) => void;
+  onOpenStudyTimer: () => void;
 }
 
 export const DashboardPage: React.FC<DashboardPageProps> = ({
@@ -49,6 +51,7 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({
   onNavigate,
   onOpenModule,
   onLaunchExam,
+  onOpenStudyTimer,
 }) => {
   const officialQuestions = useMemo(
     () => allQuestions.filter((q) => q.source.startsWith('enade-')),
@@ -108,6 +111,12 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({
       )
     );
 
+    const startOfToday = new Date();
+    startOfToday.setHours(0, 0, 0, 0);
+    const todayFocusMinutes = (progress.studySessions || [])
+      .filter((s) => s.completedAt >= startOfToday.getTime())
+      .reduce((acc, s) => acc + s.durationMinutes, 0);
+
     return {
       totalAnswered,
       totalCorrect,
@@ -117,6 +126,7 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({
       discursiveDone,
       estimatedScore,
       daysUntilExam,
+      todayFocusMinutes,
     };
   }, [allQuestions, progress]);
 
@@ -204,6 +214,16 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({
                 className="px-5 py-2.5 rounded-xl bg-indigo-500/40 hover:bg-indigo-500/60 border border-white/25 text-white font-bold text-xs sm:text-sm transition flex items-center gap-2 cursor-pointer"
               >
                 <Sparkles className="w-4 h-4 text-amber-300" /> Simulado Inédito #1
+              </button>
+              <button
+                type="button"
+                onClick={onOpenStudyTimer}
+                className="px-5 py-2.5 rounded-xl bg-emerald-500/30 hover:bg-emerald-500/50 border border-emerald-300/40 text-white font-bold text-xs sm:text-sm transition flex items-center gap-2 cursor-pointer"
+              >
+                <Timer className="w-4 h-4 text-emerald-200" />
+                {stats.todayFocusMinutes > 0
+                  ? `Sessão c/ Timer (${stats.todayFocusMinutes}m hoje)`
+                  : 'Iniciar Sessão c/ Timer'}
               </button>
             </div>
           </div>

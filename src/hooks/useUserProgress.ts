@@ -6,6 +6,7 @@ import type {
   OptionLetter,
   SimuladoResult,
   StudyPlanConfig,
+  StudySessionLog,
   UserProgress,
 } from '../types/enade';
 
@@ -35,6 +36,7 @@ const DEFAULT_PROGRESS: UserProgress = {
     daysPerWeek: 5,
     completedTasks: [],
   },
+  studySessions: [],
   streakDays: 1,
   lastActiveDate: todayStr(),
 };
@@ -47,6 +49,7 @@ function loadProgress(): UserProgress {
     const merged: UserProgress = {
       ...DEFAULT_PROGRESS,
       ...parsed,
+      studySessions: Array.isArray(parsed.studySessions) ? parsed.studySessions : [],
       studyPlan: {
         ...DEFAULT_PROGRESS.studyPlan,
         ...(parsed.studyPlan || {}),
@@ -249,6 +252,21 @@ export function useUserProgress() {
     });
   }, []);
 
+  const logStudySession = useCallback((session: Omit<StudySessionLog, 'id' | 'completedAt'>) => {
+    setProgress((prev) => ({
+      ...prev,
+      studySessions: [
+        {
+          ...session,
+          id: `sess-${Date.now()}`,
+          completedAt: Date.now(),
+        },
+        ...(prev.studySessions || []),
+      ],
+      lastActiveDate: todayStr(),
+    }));
+  }, []);
+
   const exportProgress = useCallback(() => {
     const blob = new Blob([JSON.stringify(progress, null, 2)], { type: 'application/json' });
     const url = URL.createObjectURL(blob);
@@ -266,6 +284,7 @@ export function useUserProgress() {
       setProgress({
         ...DEFAULT_PROGRESS,
         ...parsed,
+        studySessions: Array.isArray(parsed.studySessions) ? parsed.studySessions : [],
         studyPlan: {
           ...DEFAULT_PROGRESS.studyPlan,
           ...(parsed.studyPlan || {}),
@@ -295,6 +314,7 @@ export function useUserProgress() {
     reviewFlashcard,
     updateStudyPlan,
     toggleStudyTask,
+    logStudySession,
     exportProgress,
     importProgress,
     resetProgress,

@@ -195,6 +195,27 @@ export interface StudyPlanConfig {
   completedTasks: string[];
 }
 
+export type StudyTimerPhase = 'focus' | 'short-break' | 'long-break';
+
+export interface StudyTimerPreset {
+  id: string;
+  name: string;
+  tagline: string;
+  focusMinutes: number;
+  shortBreakMinutes: number;
+  longBreakMinutes: number;
+  cycles: number;
+  recommendedFor: string;
+}
+
+export interface StudySessionLog {
+  id: string;
+  presetName: string;
+  discipline: DisciplineId | 'geral';
+  durationMinutes: number;
+  completedAt: number;
+}
+
 export interface UserProgress {
   answeredQuestions: Record<
     string,
@@ -212,6 +233,7 @@ export interface UserProgress {
   discursiveAttempts: Record<string, DiscursiveAttempt>;
   flashcardProgress: Record<string, FlashcardProgress>;
   studyPlan: StudyPlanConfig;
+  studySessions: StudySessionLog[];
   streakDays: number;
   lastActiveDate: string;
 }

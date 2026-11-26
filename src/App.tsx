@@ -17,12 +17,15 @@ import {
   Upload,
   Cpu,
   RotateCcw,
+  Timer,
 } from 'lucide-react';
 import type { DisciplineId } from './types/enade';
 import { ALL_OBJECTIVE_QUESTIONS, ALL_DISCURSIVE_QUESTIONS } from './data/allExams';
 import { STUDY_MODULES } from './data/studyModules';
 import { FLASHCARDS } from './data/flashcards';
 import { useUserProgress } from './hooks/useUserProgress';
+import { useStudyTimer, formatTimerClock } from './hooks/useStudyTimer';
+import { StudyTimerWidget } from './components/StudyTimerWidget';
 import { DashboardPage } from './pages/DashboardPage';
 import { SimuladoPage, type SimuladoLaunchRequest } from './pages/SimuladoPage';
 import { QuestionBankPage } from './pages/QuestionBankPage';
@@ -60,6 +63,7 @@ export function App() {
   const [selectedBankDisc, setSelectedBankDisc] = useState<DisciplineId | 'all'>('all');
   const [selectedFlashDisc, setSelectedFlashDisc] = useState<DisciplineId | 'all'>('all');
   const [pendingSimulado, setPendingSimulado] = useState<SimuladoLaunchRequest | null>(null);
+  const [timerPanelOpen, setTimerPanelOpen] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const {
@@ -72,10 +76,13 @@ export function App() {
     reviewFlashcard,
     updateStudyPlan,
     toggleStudyTask,
+    logStudySession,
     exportProgress,
     importProgress,
     resetProgress,
   } = useUserProgress();
+
+  const studyTimer = useStudyTimer(logStudySession);
 
   useEffect(() => {
     const root = document.documentElement;
@@ -206,6 +213,49 @@ export function App() {
           </div>
         </div>
 
+        {/* Study Session Timer Quick Launcher */}
+        <div className="px-3 pt-3">
+          <button
+            type="button"
+            onClick={() => setTimerPanelOpen(true)}
+            className={`w-full px-3.5 py-2.5 rounded-xl border text-left transition flex items-center justify-between gap-2 cursor-pointer ${
+              studyTimer.state.active
+                ? studyTimer.state.phase === 'focus'
+                  ? 'bg-indigo-50 dark:bg-indigo-950/60 border-indigo-300 dark:border-indigo-700 text-indigo-900 dark:text-indigo-100'
+                  : 'bg-emerald-50 dark:bg-emerald-950/60 border-emerald-300 dark:border-emerald-700 text-emerald-900 dark:text-emerald-100'
+                : 'bg-slate-50 dark:bg-slate-900 border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-200 hover:border-indigo-400'
+            }`}
+          >
+            <span className="flex items-center gap-2 min-w-0">
+              <Timer
+                className={`w-4 h-4 shrink-0 ${
+                  studyTimer.state.active
+                    ? studyTimer.state.phase === 'focus'
+                      ? 'text-indigo-600 dark:text-indigo-400'
+                      : 'text-emerald-600 dark:text-emerald-400'
+                    : 'text-indigo-500'
+                }`}
+              />
+              <span className="text-xs font-bold truncate">
+                {studyTimer.state.active
+                  ? studyTimer.state.phase === 'focus'
+                    ? 'Foco Ativo'
+                    : 'Em Pausa'
+                  : 'Sessão c/ Timer'}
+              </span>
+            </span>
+            {studyTimer.state.active ? (
+              <span className="font-mono text-xs font-extrabold px-2 py-0.5 rounded-md bg-white/80 dark:bg-slate-950/70 shrink-0">
+                {formatTimerClock(studyTimer.state.remainingSeconds)}
+              </span>
+            ) : (
+              <span className="text-[10px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded bg-indigo-100 dark:bg-indigo-950 text-indigo-700 dark:text-indigo-300 shrink-0">
+                Iniciar
+              </span>
+            )}
+          </button>
+        </div>
+
         {/* Navigation */}
         <nav className="flex-1 p-3 space-y-1 overflow-y-auto">
           {navItems.map((item) => {
@@ -298,6 +348,22 @@ export function App() {
         <div className="flex items-center gap-2">
           <button
             type="button"
+            onClick={() => setTimerPanelOpen(true)}
+            className={`px-2.5 py-1.5 rounded-lg text-xs font-bold flex items-center gap-1.5 cursor-pointer ${
+              studyTimer.state.active
+                ? 'bg-indigo-600 text-white'
+                : 'bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-200'
+            }`}
+          >
+            <Timer className="w-4 h-4" />
+            {studyTimer.state.active ? (
+              <span className="font-mono">{formatTimerClock(studyTimer.state.remainingSeconds)}</span>
+            ) : (
+              <span>Timer</span>
+            )}
+          </button>
+          <button
+            type="button"
             onClick={() => setDarkMode((d) => !d)}
             className="p-2 rounded-lg bg-slate-100 dark:bg-slate-800"
           >
@@ -370,6 +436,7 @@ export function App() {
               onNavigate={(t) => setActiveTab(t as NavTab)}
               onOpenModule={handleOpenModule}
               onLaunchExam={handleLaunchExamBySource}
+              onOpenStudyTimer={() => setTimerPanelOpen(true)}
             />
           )}
 
@@ -452,6 +519,16 @@ export function App() {
           )}
         </div>
       </main>
+
+      {/* Global Study Session Timer (floating pill + presets modal) */}
+      <StudyTimerWidget
+        timer={studyTimer}
+        isPanelOpen={timerPanelOpen}
+        onOpenPanel={() => setTimerPanelOpen(true)}
+        onClosePanel={() => setTimerPanelOpen(false)}
+        sessions={progress.studySessions || []}
+        dailyGoalMinutes={Math.round(progress.studyPlan.hoursPerDay * 60)}
+      />
     </div>
   );
 }
